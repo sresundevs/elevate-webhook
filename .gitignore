@@ -1,0 +1,17 @@
+venv
+
+.env
+
+.prettierignore
+
+__pycache__
+
+/tests/__pycache__
+
+*.session
+
+*/.pytest_cache
+
+elevateDevDavid.hbr
+
+elevateDevDavid.state.json
