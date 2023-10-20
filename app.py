@@ -39,4 +39,4 @@ def handle_purchase_event():
     return json.dumps({message:"Hola mundo"}), 200 , {'Content-Type': 'application/json'}
     
 
-app.run(host=config['HOST'],port=config['PORT_PURCHASE'])
+app.run(host=config['HOST'],port=config['PORT'])
