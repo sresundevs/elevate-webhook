@@ -1,3 +1,4 @@
+import datetime
 import json
 import os
 
@@ -14,7 +15,22 @@ config = {
 db = connect_db()
 
 leads = db[config['DB_COLLECTION_L']]
-#customers = db[config['DB_COLLECTION_C']]
+customers = db[config['DB_COLLECTION_C']]
+purchases = db[config['DB_COLLECTION_P']]
+
+
+def messageToSend(customer, purchaseData):
+    messages = {
+        'APPROVED':f'me complace informarte que tu pago fue aprobado. Por favor verifica tu email {purchaseData["data"]["buyer"]["email"]}, dado que te estaremos enviando un email con la factura y otro con un acceso para que definas la contraseña de tu usuario y puedas acceder al curso. Felicitaciones.',
+        'EXPIRED':'lamentablemente la tarjeta con la que ha intentado realizar el pago esta expirada, por favor intente con otra.',
+        'BLOCKED':'lamentablemente la tarjeta con la que ha intentado pagar esta bloqueada, por favor intente con otra.',
+        'NO_FUNDS':'lamentablemente la tarjeta con la que ha intentado pagar no tiene fondos suficientes, por favor intente con otra.',
+        'CANCELLED':'lamentablemente el pago fue cancelado debido a un problema del procesador de pagos, por favor intente con otra tarjeta. En caso de querer saber más sobre pagos cancelados acceda a: https://help.hotmart.com/pt-BR/article/Como-funciona-o-processo-de-compra-na-Hotmart-Por-que-minha-compra-foi-cancelada-/203456160'
+    }
+    try:
+        return f'Estimado {customer["Nombre"]}, {messages[purchaseData["data"]["purchase"]["status"]]}'
+    except:
+        return None
 
 #Flask app to listen Webhook from Hotmart
 app = Flask(__name__)
@@ -23,20 +39,45 @@ app = Flask(__name__)
 def handle_purchase_event():
     purchaseData = request.json
     #print(purchaseData)
-    phone = purchaseData["data"]["buyer"]["checkout_phone"]
+    telefono = purchaseData["data"]["buyer"]["checkout_phone"]
     email = purchaseData["data"]["buyer"]["email"]
-    leadData = leads.find_one({'$or':[{'Telefono':phone},{'Email':email}]})
+
+    customer = customers.find_one({'$or':[{'Telefono':"+"+telefono},{'Email':email}]})
+    
+    leadData = leads.find_one({'Telefono':customer["Telefono"]})
     #print(leadData)
-    if leadData: 
+    #print(customer)
+    message = messageToSend(customer, purchaseData)
+    #print(message)
+    try:
         lead = leadData["lead"]
         lola = LolaMessageSender(lead, config["ASSISTANT_TOKEN"], config['PROMPTER_URL'])    
-        lola.send_text_message("Compra confirmada")
-        message="Compra con asistente"
-    else:
-        print("Telefono no registrado en base de datos")
-        message="Compra sin asistente"
+        lola.send_text_message(message)
+        print("Mensaje enviado")
 
-    return json.dumps({message:"Hola mundo"}), 200 , {'Content-Type': 'application/json'}
+        data = {
+            "IdCompra": purchaseData["data"]["purchase"]["transaction"],
+            "FechaCompra": datetime.utcfromtimestamp(purchaseData["data"]["purchase"]["order_date"]/1000)
+            }
+        
+        purchase = purchases.find_one({'Telefono':customer["Telefono"]})
+        existsId = False
+        # if purchase:
+        #     for info in purchase["InfoCompra"]:
+        #         if info["IdCompra"] == data["IdCompra"]:
+        #             existsId = True
+        #             break
+        #     if not existsId:
+        #         purchases.update_one({"Telefono":customer["Telefono"]},{"$push":{"InfoCompra":data}})
+        # else:
+        #     purchases.insert_one({})
+    except Exception as e:
+        print(e)
+        
+
+    return json.dumps(None), 200 , {'Content-Type': 'application/json'}
     
 
 app.run(host=config['HOST'],port=config['PORT'])
+
+

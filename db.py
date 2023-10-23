@@ -33,4 +33,7 @@ def connect_db():
     leads = db[config['DB_COLLECTION_L']]
     leads.create_index("Telefono",unique=True)
 
+    purchases = db[config['DB_COLLECTION_P']]
+    purchases.create_index("Telefono",unique=True)
+
     return db
