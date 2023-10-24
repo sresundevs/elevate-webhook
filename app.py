@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime as dt
 import json
 import os
 
@@ -37,40 +37,63 @@ app = Flask(__name__)
 
 @app.route('/purchase_event', methods=['POST'])
 def handle_purchase_event():
-    purchaseData = request.json
-    #print(purchaseData)
-    telefono = purchaseData["data"]["buyer"]["checkout_phone"]
-    email = purchaseData["data"]["buyer"]["email"]
-
-    customer = customers.find_one({'$or':[{'Telefono':"+"+telefono},{'Email':email}]})
     
-    leadData = leads.find_one({'Telefono':customer["Telefono"]})
-    #print(leadData)
-    #print(customer)
-    message = messageToSend(customer, purchaseData)
-    #print(message)
     try:
-        lead = leadData["lead"]
-        lola = LolaMessageSender(lead, config["ASSISTANT_TOKEN"], config['PROMPTER_URL'])    
-        lola.send_text_message(message)
-        print("Mensaje enviado")
+        purchaseData = request.json
+        #print(purchaseData)
+        telefono = purchaseData["data"]["buyer"]["checkout_phone"]
+        email = purchaseData["data"]["buyer"]["email"]
 
+        customer = customers.find_one({'$or':[{'Telefono':"+"+telefono},{'Email':email}]})
+    
+        leadData = leads.find_one({'Telefono':customer["Telefono"]})
+        #print(leadData)
+        #print(customer)
+        message = messageToSend(customer, purchaseData)
+        #print(message)
         data = {
             "IdCompra": purchaseData["data"]["purchase"]["transaction"],
-            "FechaCompra": datetime.utcfromtimestamp(purchaseData["data"]["purchase"]["order_date"]/1000)
+            "FechaCompra": dt.utcfromtimestamp(int(purchaseData["data"]["purchase"]["order_date"])/1000),
+            "CompraVerificable": "Yes",
+            "MetodoPago": f'Hotmart - {purchaseData["data"]["purchase"]["payment"]["type"]}',
+            "PagoAprobado": "Yes" if purchaseData["data"]["purchase"]["status"] == "APPROVED" else "Not"
             }
         
-        purchase = purchases.find_one({'Telefono':customer["Telefono"]})
-        existsId = False
-        # if purchase:
-        #     for info in purchase["InfoCompra"]:
-        #         if info["IdCompra"] == data["IdCompra"]:
-        #             existsId = True
-        #             break
-        #     if not existsId:
-        #         purchases.update_one({"Telefono":customer["Telefono"]},{"$push":{"InfoCompra":data}})
-        # else:
-        #     purchases.insert_one({})
+        #print(data)
+        purchasesInfo = purchases.find_one({'Telefono':customer["Telefono"]})
+        sendMessage = False
+        if purchasesInfo:
+            existingPurchase = None
+            for info in purchasesInfo["InfoCompras"]:    
+                if info["IdCompra"] == data["IdCompra"]:
+                    existingPurchase = info
+                    break
+            if existingPurchase:
+                indexPurchase = purchasesInfo["InfoCompras"].index(existingPurchase)
+                purchasesInfo["InfoCompras"][indexPurchase] = data
+                purchases.update_one({'Telefono':purchasesInfo["Telefono"]},{'$set':purchasesInfo})
+
+                if existingPurchase["PagoAprobado"] == "Not" and data["PagoAprobado"]=="Yes" : 
+                    sendMessage = True
+            else:
+                purchases.update_one({'Telefono':purchasesInfo["Telefono"]},{'$push':{"InfoCompras":data}})
+                sendMessage = True
+
+        else:
+            purchases.insert_one({'Telefono':customer["Telefono"],'InfoCompras':[data]})
+            sendMessage = True
+
+        if message and sendMessage:
+            lead = leadData["lead"]
+            lola = LolaMessageSender(lead, config["ASSISTANT_TOKEN"], config['PROMPTER_URL'])    
+            lola.send_text_message(message)
+            print("Mensaje enviado")
+        else:
+            print('Mensaje no enviado')
+        
+        
+        
+        
     except Exception as e:
         print(e)
         
