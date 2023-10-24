@@ -101,6 +101,7 @@ def handle_purchase_event():
     return json.dumps(None), 200 , {'Content-Type': 'application/json'}
     
 
-app.run(host=config['HOST'],port=config['PORT'])
+if __name__ == '__main__':
+    app.run(debug=True, port=os.getenv("PORT", default=5000))
 
 
