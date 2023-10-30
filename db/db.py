@@ -11,14 +11,15 @@ config = {
     **os.environ,               # override loaded values with environment variables
 }
 
-def connect_db():
+def connect_db(debug):
     #The mongo client is created
     client = MongoClient(config['DB_URI'], server_api=ServerApi('1')) 
 
     #It checks that there is a connection with the client
     try:
         client.admin.command('ping')
-        print("DB Connected")
+        if debug: 
+            print("DB Connected")
     except Exception as e:
         print(e)
         sys.exit(1)
