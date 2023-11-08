@@ -4,7 +4,7 @@ from dotenv import dotenv_values
 from flask import Blueprint, request
 from pymongo.errors import DuplicateKeyError
 
-from db.db import connect_db
+from db.db import connect_db, timestamps
 
 config = {
     **dotenv_values(".env"),    # load development variables
@@ -25,10 +25,11 @@ customers = db[config['DB_COLLECTION_C']]
 customer_bp=Blueprint('customers_bp',__name__)
 
 #Routes to customers collection
-@customer_bp.route('/customers', methods=['GET'])
+@customer_bp.route('/customers', methods=['POST'])
 def handle_list_customers():
-       
-    list_customer = [{**customer, '_id': str(customer['_id'])} for customer in customers.find()]
+    filter = request.json
+    
+    list_customer = [{**customer, '_id': str(customer['_id'])} for customer in customers.find().sort('created_at', -1)]
 
     return list_customer
 
@@ -39,7 +40,7 @@ def handle_consult_customer():
         customer = customers.find_one({'Telefono': "+"+tel})
         if not customer:
             raise CustomerNotFoundException
-        resp = {**customer, '_id': str(customer['_id'])}, 200
+        resp = {**customer, '_id': str(customer['_id'])}, 500
     except CustomerNotFoundException:
         resp = {'message':'Customer not found'}, 400
     except Exception as e:
@@ -55,7 +56,7 @@ def handle_create_customer():
         if not customer['Nombre'] or not customer['Telefono']:
             raise CustomerInfoException
                     
-        customers.insert_one(customer)
+        customers.insert_one(timestamps(customer))
         resp = {'message': 'Customer created'}, 200
 
     except CustomerInfoException:
@@ -77,7 +78,7 @@ def handle_update_customer():
         customerInfo = request.json
         if not customerInfo['Telefono'] or not customerInfo['Nombre']:
             raise CustomerInfoException
-        customer = customers.find_one_and_update({'Telefono':'+'+customerInfo['Telefono']}, {'$set':customerInfo})
+        customer = customers.find_one_and_update({'Telefono':customerInfo['Telefono']}, {'$set':timestamps(customerInfo,True)})
         if not customer:
             raise CustomerNotFoundException
         resp = {'message': 'Customer updated'}, 200
@@ -86,7 +87,7 @@ def handle_update_customer():
     except CustomerNotFoundException:
         resp = {'message': "Customer not found"}, 400
     except Exception as e:
-        print('error', )
+        print(e)
         resp = {'message': "Something went wrong"}, 400
     
     return resp

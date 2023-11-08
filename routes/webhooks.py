@@ -7,7 +7,7 @@ from flask import Blueprint, request
 from lolapy import LolaMessageSender
 import stripe
 
-from db.db import connect_db
+from db.db import connect_db, timestamps
 
 webhooks_bp = Blueprint('webhooks_bp',__name__)
 
@@ -40,18 +40,17 @@ def handle_event_hotmart():
     
     try:
         purchaseData = request.json
-        #print(purchaseData)
         telefono = purchaseData["data"]["buyer"]["checkout_phone"]
         email = purchaseData["data"]["buyer"]["email"]
 
         customer = customers.find_one({'$or':[{'Telefono':"+"+telefono},{'Email':email}]})
     
         leadData = leads.find_one({'Telefono':customer["Telefono"]})
-        #print(leadData)
-        #print(customer)
+        
         message = messageToSend(customer, purchaseData)
-        #print(message)
+        
         data = {
+            "Telefono": customer["Telefono"],
             "IdCompra": purchaseData["data"]["purchase"]["transaction"],
             "FechaCompra": dt.utcfromtimestamp(int(purchaseData["data"]["purchase"]["order_date"])/1000),
             "CompraVerificable": "Yes",
@@ -59,28 +58,14 @@ def handle_event_hotmart():
             "PagoAprobado": "Yes" if purchaseData["data"]["purchase"]["status"] == "APPROVED" else "Not"
             }
         
-        #print(data)
-        purchasesInfo = purchases.find_one({'Telefono':customer["Telefono"]})
+        purchase = purchases.find_one({"IdCompra":data["IdCompra"]})
         sendMessage = False
-        if purchasesInfo:
-            existingPurchase = None
-            for info in purchasesInfo["InfoCompras"]:    
-                if info["IdCompra"] == data["IdCompra"]:
-                    existingPurchase = info
-                    break
-            if existingPurchase:
-                indexPurchase = purchasesInfo["InfoCompras"].index(existingPurchase)
-                purchasesInfo["InfoCompras"][indexPurchase] = data
-                purchases.update_one({'Telefono':purchasesInfo["Telefono"]},{'$set':purchasesInfo})
-
-                if existingPurchase["PagoAprobado"] == "Not" and data["PagoAprobado"]=="Yes" : 
-                    sendMessage = True
-            else:
-                purchases.update_one({'Telefono':purchasesInfo["Telefono"]},{'$push':{"InfoCompras":data}})
+        if purchase:
+            purchases.update_one({'IdCompra':data["IdCompra"]},{'$set': timestamps(data,True)})
+            if purchase["PagoAprobado"] == "Not" and data["PagoAprobado"] == "Yes":
                 sendMessage = True
-
         else:
-            purchases.insert_one({'Telefono':customer["Telefono"],'InfoCompras':[data]})
+            purchases.insert_one(timestamps(data))
             sendMessage = True
 
         if message and sendMessage:

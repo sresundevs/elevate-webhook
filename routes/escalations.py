@@ -1,10 +1,12 @@
 import os
+from datetime import datetime as dt
 
+from bson import ObjectId
 from dotenv import dotenv_values
 from flask import Blueprint, request
 from pymongo.errors import DuplicateKeyError
 
-from db.db import connect_db
+from db.db import connect_db, timestamps
 
 config = {
     **dotenv_values(".env"),    # load development variables
@@ -26,22 +28,24 @@ escalations = db[config['DB_COLLECTION_E']]
 escalations_bp = Blueprint('escalations_bp',__name__)
 
 #Routes to escalations collection
-@escalations_bp.route('/escalations', methods=['GET'])
+@escalations_bp.route('/escalations', methods=['POST'])
 def handle_list_escalations():
-    agg = [{'$group':{'_id': "$Telefono", 'FechasEscalamiento': {"$push":{"FechaEscalamiento":"$FechaEscalamiento", "_id":"$_id"}}}}]
-    list_escalation = [{**escalation,  **customers.find_one({'Telefono':escalation['_id']},{'_id':0})} for escalation in escalations.aggregate(agg)]
+    filter = request.json
+    if len(filter['range']) == 0:
+        list_escalation = [{**escalation, '_id': str(escalation['_id']),  **customers.find_one({'Telefono':escalation['Telefono']},{'_id':0})} for escalation in escalations.find()]
+    else:
+        dates = [dt.fromisoformat(date) for date in filter['range']]
+        list_escalation = [{**escalation, '_id': str(escalation['_id']),  **customers.find_one({'Telefono':escalation['Telefono']},{'_id':0})} for escalation in escalations.find({'FechaEscalamiento': {'$gte': dates[0], '$lte': dates[1]}})] 
     return list_escalation
 
 @escalations_bp.route('/escalation', methods=['GET'])
 def handle_consult_escalation():
     try:
-        tel = str(request.args.get('tel'))
-        agg = [{'$match':{'Telefono': "+"+tel}},{'$group':{'_id': "$Telefono", 'FechasEscalamiento': {"$push":{"FechaEscalamiento":"$FechaEscalamiento", "_id":"$_id"}}}}]
-        escalation_list = list(escalations.aggregate(agg))
-        if not escalation_list:
+        id = str(request.args.get('id'))
+        escalation = escalations.find_one({'_id':ObjectId(id)})
+        if not escalation:
             raise EscalationNotFoundException
-        escalation = escalation_list[0]
-        resp = {**escalation, **customers.find_one({'Telefono':escalation['_id']}, {'_id': 0})}, 200
+        resp = {**escalation, '_id': str(escalation['_id']), **customers.find_one({'Telefono':escalation['Telefono']}, {'_id': 0})}, 200
     except EscalationNotFoundException:
         resp = {'message':'Escalation not found'}, 400
     except Exception as e:
@@ -57,7 +61,7 @@ def handle_create_escalation():
         if not escalation['Telefono'] or not escalation['FechaEscalamiento']:
             raise EscalationInfoException
                     
-        escalations.insert_one(escalation)
+        escalations.insert_one(timestamps(escalation))
         resp = {'message': 'Escalation created'}, 200
 
     except EscalationInfoException:
@@ -79,7 +83,7 @@ def handle_update_escalation():
         escalationInfo = request.json
         if not escalationInfo['Telefono'] or not escalationInfo['FechaEscalamiento'] or not escalationInfo['_id']:
             raise EscalationInfoException
-        escalation = escalations.find_one_and_update({'_id':escalationInfo['_id']}, {'$set':escalationInfo})
+        escalation = escalations.find_one_and_update({'_id':ObjectId(escalationInfo['_id'])}, {'$set':timestamps(escalationInfo, True)})
         if not escalation:
             raise EscalationNotFoundException
         resp = {'message': 'Escalation updated'}, 200

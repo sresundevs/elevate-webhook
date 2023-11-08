@@ -2,8 +2,9 @@
 lolapy @ git+https://github.com/alejamp/lola-py-sdk
 python-dotenv>=1.0.0
 aiohttp>=3.8.5
-requests
-pymongo
-gunicorn
-Werkzeug
-stripe
+requests>=2.31.0
+pymongo>=4.5.0
+gunicorn>=21.2.0
+Werkzeug>=3.0.0
+stripe>=7.0.0
+Flask-Cors>=4.0.0

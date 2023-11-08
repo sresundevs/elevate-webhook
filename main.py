@@ -2,6 +2,7 @@ import os
 
 from dotenv import dotenv_values
 from flask import Flask
+from flask_cors import CORS
 
 from db.db import connect_db
 from routes.customers import customer_bp
@@ -18,6 +19,7 @@ db = connect_db(debug=True)
 
 #Flask app to listen Webhook from Hotmart
 app = Flask(__name__)
+CORS(app)
 
 app.register_blueprint(webhooks_bp)
 app.register_blueprint(customer_bp)

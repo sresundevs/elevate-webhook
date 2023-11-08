@@ -1,6 +1,7 @@
 
 import os
 import sys
+from datetime import datetime as dt
 
 from dotenv import dotenv_values
 from pymongo.mongo_client import MongoClient
@@ -34,7 +35,13 @@ def connect_db(debug):
     leads = db[config['DB_COLLECTION_L']]
     leads.create_index("Telefono",unique=True)
 
-    purchases = db[config['DB_COLLECTION_P']]
-    purchases.create_index("Telefono",unique=True)
-
     return db
+
+def timestamps(document, isUpdate=False):
+    if isUpdate:
+        document['updated_at'] = dt.utcnow()
+    else:
+        document['created_at'] = dt.utcnow()
+        document['updated_at'] = dt.utcnow()
+    
+    return document
