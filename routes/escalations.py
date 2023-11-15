@@ -1,17 +1,11 @@
-import os
 from datetime import datetime as dt
 
 from bson import ObjectId
-from dotenv import dotenv_values
 from flask import Blueprint, request
 from pymongo.errors import DuplicateKeyError
 
 from db.db import connect_db, timestamps
-
-config = {
-    **dotenv_values(".env"),    # load development variables
-    **os.environ,               # override loaded values with environment variables
-}
+from utils.auth import verify_token
 
 class EscalationInfoException(Exception):
     "Raised when the escalation hasn't required info"
@@ -21,24 +15,27 @@ class EscalationNotFoundException(Exception):
     "Raised when the escalation not found"
     pass
 
-db = connect_db(debug=False)
-customers = db[config['DB_COLLECTION_C']]
-escalations = db[config['DB_COLLECTION_E']]
+customers = connect_db().customers
+escalations = connect_db().escalations
 
 escalations_bp = Blueprint('escalations_bp',__name__)
 
 #Routes to escalations collection
 @escalations_bp.route('/escalations', methods=['POST'])
+@verify_token
 def handle_list_escalations():
     filter = request.json
+    
     if len(filter['range']) == 0:
         list_escalation = [{**escalation, '_id': str(escalation['_id']),  **customers.find_one({'Telefono':escalation['Telefono']},{'_id':0})} for escalation in escalations.find()]
     else:
         dates = [dt.fromisoformat(date) for date in filter['range']]
         list_escalation = [{**escalation, '_id': str(escalation['_id']),  **customers.find_one({'Telefono':escalation['Telefono']},{'_id':0})} for escalation in escalations.find({'FechaEscalamiento': {'$gte': dates[0], '$lte': dates[1]}})] 
+        
     return list_escalation
 
 @escalations_bp.route('/escalation', methods=['GET'])
+@verify_token
 def handle_consult_escalation():
     try:
         id = str(request.args.get('id'))
@@ -55,6 +52,7 @@ def handle_consult_escalation():
     return resp
 
 @escalations_bp.route('/escalation', methods=['POST'])
+@verify_token
 def handle_create_escalation():
     try:
         escalation = request.json
@@ -78,6 +76,7 @@ def handle_create_escalation():
     return resp
 
 @escalations_bp.route('/escalation', methods=['PUT'])
+@verify_token
 def handle_update_escalation():
     try:
         escalationInfo = request.json
@@ -98,5 +97,6 @@ def handle_update_escalation():
     return resp
 
 @escalations_bp.route('/escalation', methods=['DELETE'])
+@verify_token
 def handle_delete_escalation():
     return 'OK' 

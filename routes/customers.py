@@ -1,15 +1,8 @@
-import os
-
-from dotenv import dotenv_values
 from flask import Blueprint, request
 from pymongo.errors import DuplicateKeyError
 
 from db.db import connect_db, timestamps
-
-config = {
-    **dotenv_values(".env"),    # load development variables
-    **os.environ,               # override loaded values with environment variables
-}
+from utils.auth import verify_token
 
 class CustomerInfoException(Exception):
     "Raised when the customer hasn't required info"
@@ -19,13 +12,13 @@ class CustomerNotFoundException(Exception):
     "Raised when the customer not found"
     pass
 
-db = connect_db(debug=False)
-customers = db[config['DB_COLLECTION_C']]
+customers = connect_db().customers
 
-customer_bp=Blueprint('customers_bp',__name__)
+customer_bp = Blueprint('customers_bp',__name__)
 
 #Routes to customers collection
 @customer_bp.route('/customers', methods=['POST'])
+@verify_token
 def handle_list_customers():
     filter = request.json
     
@@ -34,13 +27,14 @@ def handle_list_customers():
     return list_customer
 
 @customer_bp.route('/customer', methods=['GET'])
+@verify_token
 def handle_consult_customer():
     try:
         tel = str(request.args.get('tel'))
         customer = customers.find_one({'Telefono': "+"+tel})
         if not customer:
             raise CustomerNotFoundException
-        resp = {**customer, '_id': str(customer['_id'])}, 500
+        resp = {**customer, '_id': str(customer['_id'])}, 200
     except CustomerNotFoundException:
         resp = {'message':'Customer not found'}, 400
     except Exception as e:
@@ -50,6 +44,7 @@ def handle_consult_customer():
     return resp
     
 @customer_bp.route('/customer', methods=['POST'])
+@verify_token
 def handle_create_customer():
     try:
         customer = request.json
@@ -73,6 +68,7 @@ def handle_create_customer():
     return resp
 
 @customer_bp.route('/customer', methods=['PUT'])
+@verify_token
 def handle_update_customer():
     try:
         customerInfo = request.json
@@ -93,5 +89,6 @@ def handle_update_customer():
     return resp
 
 @customer_bp.route('/customer', methods=['DELETE'])
+@verify_token
 def handle_delete_customer():
     return 'delete customer'

@@ -16,7 +16,7 @@ config = {
     **os.environ,               # override loaded values with environment variables
 }
 
-db = connect_db(debug=False)
+db = connect_db()
 leads = db[config['DB_COLLECTION_L']]
 customers = db[config['DB_COLLECTION_C']]
 purchases = db[config['DB_COLLECTION_P']]

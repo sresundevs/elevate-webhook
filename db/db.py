@@ -12,7 +12,7 @@ config = {
     **os.environ,               # override loaded values with environment variables
 }
 
-def connect_db(debug):
+def connect_db(debug=False):
     #The mongo client is created
     client = MongoClient(config['DB_URI'], server_api=ServerApi('1')) 
 

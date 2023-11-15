@@ -1,17 +1,11 @@
-import os
 from datetime import datetime as dt
 
 from bson import ObjectId
-from dotenv import dotenv_values
 from flask import Blueprint, request
 from pymongo.errors import DuplicateKeyError
 
 from db.db import connect_db, timestamps
-
-config = {
-    **dotenv_values(".env"),    # load development variables
-    **os.environ,               # override loaded values with environment variables
-}
+from utils.auth import verify_token
 
 class PurchaseInfoException(Exception):
     "Raised when the purchase hasn't required info"
@@ -21,14 +15,14 @@ class PurchaseNotFoundException(Exception):
     "Raised when the purchase not found"
     pass
 
-db = connect_db(debug=False)
-customers = db[config['DB_COLLECTION_C']]
-purchases = db[config['DB_COLLECTION_P']]
+customers = connect_db().customers
+purchases = connect_db().purchases
 
 purchases_bp = Blueprint('purchases_bp',__name__)
 
 #Routes to purchases collection
 @purchases_bp.route('/purchases', methods=['POST'])
+@verify_token
 def handle_list_purchases():
     filter = request.json
     
@@ -41,14 +35,13 @@ def handle_list_purchases():
         dates = [dt.fromisoformat(date) for date in filter['range']]
         list_purchase = [
             {**purchase, '_id': str(purchase['_id']), **customers.find_one({'Telefono': purchase['Telefono']}, {'_id': 0})}
-            for purchase in purchases.find({'created_at': {'$gte': dates[0], '$lte': dates[1]}}).sort('created_at', -1)
+            for purchase in purchases.find({'FechaCompra': {'$gte': dates[0], '$lte': dates[1]}}).sort('created_at', -1)
         ]
-            
-        
         
     return list_purchase
 
 @purchases_bp.route('/purchase', methods=['GET'])
+@verify_token
 def handle_consult_purchase():
     try:
         id = str(request.args.get('id'))
@@ -65,6 +58,7 @@ def handle_consult_purchase():
     return resp
 
 @purchases_bp.route('/purchase', methods=['POST'])
+@verify_token
 def handle_create_purchase():
     try:
         purchase = request.json
@@ -83,6 +77,7 @@ def handle_create_purchase():
     return resp
 
 @purchases_bp.route('/purchase', methods=['PUT'])
+@verify_token
 def handle_update_purchase():
     try:
         purchaseInfo = request.json
@@ -105,5 +100,6 @@ def handle_update_purchase():
     return resp
 
 @purchases_bp.route('/purchase', methods=['DELETE'])
+@verify_token
 def handle_delete_purchase():
     return 'OK' 
