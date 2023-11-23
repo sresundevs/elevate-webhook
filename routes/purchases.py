@@ -30,13 +30,13 @@ def handle_list_purchases():
     
     if len(filter['range']) == 0:
         list_purchase = [
-            {**purchase, '_id': str(purchase['_id']), **customers.find_one({'Telefono': purchase['Telefono']}, {'_id': 0})}
+            {**purchase, '_id': str(purchase['_id']), **(customers.find_one({'Telefono': purchase['Telefono']}, {'_id': 0}) if customers.find_one({'Telefono': purchase['Telefono']}) else {'Nombre': 'Customer not found'})}
             for purchase in purchases.find().sort('created_at', -1)
         ]
     else:
         dates = [dt.fromisoformat(date) for date in filter['range']]
         list_purchase = [
-            {**purchase, '_id': str(purchase['_id']), **customers.find_one({'Telefono': purchase['Telefono']}, {'_id': 0})}
+            {**purchase, '_id': str(purchase['_id']), **(customers.find_one({'Telefono': purchase['Telefono']}, {'_id': 0}) if customers.find_one({'Telefono': purchase['Telefono']}) else {'Nombre': 'Customer not found'})}
             for purchase in purchases.find({'FechaCompra': {'$gte': dates[0], '$lte': dates[1]}}).sort('created_at', -1)
         ]
         

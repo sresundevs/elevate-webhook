@@ -27,10 +27,16 @@ def handle_list_escalations():
     filter = request.json
     
     if len(filter['range']) == 0:
-        list_escalation = [{**escalation, '_id': str(escalation['_id']),  **(customer:=customers.find_one({'Telefono':escalation['Telefono']},{'_id':0}) if customer else {'Nombre':'Customer not found'})} for escalation in escalations.find()]
+        list_escalation = [
+            {**escalation, '_id': str(escalation['_id']),  **(customers.find_one({'Telefono':escalation['Telefono']},{'_id':0}) if customers.find_one({'Telefono':escalation['Telefono']}) else {'Nombre':'Customer not found'})}
+            for escalation in escalations.find()
+        ]
     else:
         dates = [dt.fromisoformat(date) for date in filter['range']]
-        list_escalation = [{**escalation, '_id': str(escalation['_id']),  **customers.find_one({'Telefono':escalation['Telefono']},{'_id':0})} for escalation in escalations.find({'FechaEscalamiento': {'$gte': dates[0], '$lte': dates[1]}})] 
+        list_escalation = [
+            {**escalation, '_id': str(escalation['_id']),  **(customers.find_one({'Telefono':escalation['Telefono']},{'_id':0}) if  customers.find_one({'Telefono':escalation['Telefono']}) else {'Nombre':'Customer not found'})}
+            for escalation in escalations.find({'FechaEscalamiento': {'$gte': dates[0], '$lte': dates[1]}})
+        ] 
         
     return list_escalation
 
