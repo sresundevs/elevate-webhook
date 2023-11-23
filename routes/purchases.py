@@ -3,9 +3,11 @@ from datetime import datetime as dt
 from bson import ObjectId
 from flask import Blueprint, request
 from pymongo.errors import DuplicateKeyError
+import requests
 
 from db.db import connect_db, timestamps
 from utils.auth import verify_token
+from utils.s3 import upload_from_file, upload_from_url
 
 class PurchaseInfoException(Exception):
     "Raised when the purchase hasn't required info"
@@ -80,14 +82,23 @@ def handle_create_purchase():
 @verify_token
 def handle_update_purchase():
     try:
-        purchaseInfo = request.json
-        if not purchaseInfo['_id']:
+        if not '_id' in request.form or not 'PagoAprobado' in request.form:
             raise PurchaseInfoException
-        id = purchaseInfo['_id']
-        purchaseInfo.pop('_id')
-        purchase = purchases.find_one_and_update({'_id':ObjectId(id)}, {'$set':timestamps(purchaseInfo, True)})
-        if not purchase:
+        id = request.form['_id']
+        if not purchases.find_one({'_id': ObjectId(id)}):
             raise PurchaseNotFoundException
+        
+        if 'Evidencia' in request.files:
+            data = request.form.to_dict()
+            purchase = purchases.find_one({'_id': ObjectId(id)})
+            file = request.files['Evidencia']
+            filename = f"{file.filename.split('.')[0]}_{purchase['FechaCompra'].strftime('%Y%m%d%H%M%S')}.{file.filename.split('.')[1]}"
+            url = upload_from_file(file, filename)
+            print('data',data)
+            print('url', url)
+        elif 'Evidencia' in request.form:
+            data = request.form.to_dict()
+            purchases.find_one_and_update({'_id':ObjectId(id)}, {'$set':timestamps(data, True)})
         resp = {'message': 'Purchase updated'}, 200
     except PurchaseInfoException:
         resp = {'message': "Purchase hasn't required info"}, 400
@@ -103,3 +114,17 @@ def handle_update_purchase():
 @verify_token
 def handle_delete_purchase():
     return 'OK' 
+
+
+@purchases_bp.route('/purchase/upload', methods=['POST'])
+def handle_upload_purchase():
+    data = request.json
+    purchase = purchases.find_one({'_id':ObjectId(data['_id'])})
+    namelist = purchase['Evidencia'].split('/')[len(purchase['Evidencia'].split('/')) - 1].split('.')
+    filename = f"{namelist[0]}_{purchase['FechaCompra'].strftime('%Y%m%d%H%M%S')}.{namelist[1]}"
+    file = requests.get(purchase['Evidencia']).content
+    success = upload_from_url(file, filename)
+    if success :
+        print('success', success)
+    
+    return 'OK'
