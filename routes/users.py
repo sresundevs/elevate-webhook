@@ -27,10 +27,10 @@ users_bp = Blueprint('users_bp',__name__)
 def handle_list_users():
     filter = request.json
     if len(filter['range']) == 0:
-        list_user = [{**user, '_id': str(user['_id'])} for user in users.find().sort('created_at', -1)]
+        list_user = [{**user, '_id': str(user['_id'])} for user in users.find({},{'Password': 0}).sort('created_at', -1)]
     else:
         dates = [dt.fromisoformat(date) for date in filter['range']]
-        list_user = [{**user, '_id': str(user['_id'])} for user in users.find({'created_at': {'$gte': dates[0], '$lte': dates[1]}}).sort('created_at', -1)]
+        list_user = [{**user, '_id': str(user['_id'])} for user in users.find({'created_at': {'$gte': dates[0], '$lte': dates[1]}},{'Password': 0}).sort('created_at', -1)]
     return list_user
 
 @users_bp.route('/user', methods=['GET'])
