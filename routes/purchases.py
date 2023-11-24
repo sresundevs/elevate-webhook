@@ -123,8 +123,11 @@ def handle_upload_purchase():
     namelist = purchase['Evidencia'].split('/')[len(purchase['Evidencia'].split('/')) - 1].split('.')
     filename = f"{namelist[0]}_{purchase['FechaCompra'].strftime('%Y%m%d%H%M%S')}.{namelist[1]}"
     file = requests.get(purchase['Evidencia']).content
-    success = upload_from_url(file, filename)
-    if success :
-        print('success', success)
+    url = upload_from_url(file, filename)
+    if url:
+        print('success', url)
+        purchases.find_one_and_update({'_id':ObjectId(data['_id'])}, {'$set':{'Evidencia': url}})
+    else:
+        print('error')
     
     return 'OK'
