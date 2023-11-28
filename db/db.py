@@ -25,10 +25,10 @@ def connect_db(debug=False):
         print(e)
         sys.exit(1)
     
-    #The db is called elevate
+    #The db is called
     db = client[config['DB_NAME']]
     
-    #The collection is called customers
+    #The collections are called
     customers = db[config['DB_COLLECTION_C']]
     customers.create_index("Telefono",unique=True)
 

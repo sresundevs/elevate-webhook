@@ -117,6 +117,7 @@ def handle_delete_purchase():
 
 
 @purchases_bp.route('/purchase/upload', methods=['POST'])
+@verify_token
 def handle_upload_purchase():
     data = request.json
     purchase = purchases.find_one({'_id':ObjectId(data['_id'])})
