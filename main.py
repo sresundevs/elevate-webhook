@@ -38,7 +38,7 @@ def handle_check():
     return 'OK'
 
 if __name__ == '__main__':
-    #app.run(host=config['HOST'],port=config['PORT'])  #To run in local
-    app.run(port=os.getenv("PORT", default=5000)) #To run in PROD
+    app.run(host=config['HOST'],port=config['PORT'])  #To run in local
+    #app.run(port=os.getenv("PORT", default=5000)) #To run in PROD
 
 
