@@ -116,8 +116,7 @@ def handle_customer_stats():
     filter = request.json
     dates = [dt.now() - timedelta(days=60), dt.now()]
     if len(filter["range"]) > 0:
-        dates = [dt.fromisoformat(date) for date in filter["dates"]]
-
+        dates = [dt.fromisoformat(date) for date in filter["range"]]
     pipeline = aggCustomers(dates)
     list_customer = list(customers.aggregate(pipeline))
     return list_customer
