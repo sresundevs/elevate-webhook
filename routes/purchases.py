@@ -177,10 +177,14 @@ def handle_upload_purchase():
 @verify_token
 def handle_get_purchasesStats():
     filter = request.json
+    print("filter", filter)
     dates = [dt.now() - timedelta(days=60), dt.now()]
 
     if len(filter["range"]) > 0:
         dates = [dt.fromisoformat(date) for date in filter["range"]]
+        dates2 = [dt.strptime(date, "%Y-%m-%dT%H:%M:%S.%fZ") for date in filter["range"]]
+        print("dates", dates)
+        print("dates2", dates2)
 
     pipeline = aggPurchases(dates)
     list_purchase = list(purchases.aggregate(pipeline))
