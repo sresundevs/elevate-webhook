@@ -2,6 +2,7 @@ from datetime import datetime as dt, timedelta
 
 from flask import Blueprint, request
 from pymongo.errors import DuplicateKeyError
+import pytz
 
 from db.db import connect_db, timestamps
 from utils.agg import aggCustomers
@@ -17,6 +18,7 @@ class CustomerNotFoundException(Exception):
     "Raised when the customer not found"
     pass
 
+tz = pytz.timezone('UTC')
 
 customers = connect_db().customers
 

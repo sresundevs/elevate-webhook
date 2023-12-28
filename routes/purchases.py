@@ -3,6 +3,7 @@ from datetime import datetime as dt, timedelta
 from bson import ObjectId
 from flask import Blueprint, request
 from pymongo.errors import DuplicateKeyError
+import pytz
 import requests
 
 from db.db import connect_db, timestamps
@@ -20,6 +21,7 @@ class PurchaseNotFoundException(Exception):
     "Raised when the purchase not found"
     pass
 
+tz = pytz.timezone('UTC')
 
 customers = connect_db().customers
 purchases = connect_db().purchases
@@ -180,7 +182,7 @@ def handle_get_purchasesStats():
     dates = [dt.now() - timedelta(days=60), dt.now()]
     if len(filter["range"]) > 0:
         #dates = [dt.fromisoformat(date) for date in filter["range"]]
-        dates = [dt.strptime(date, "%Y-%m-%dT%H:%M:%S.%fZ") for date in filter["range"]]        
+        dates = [dt.strptime(date, "%Y-%m-%dT%H:%M:%S.%fZ").astimezone(tz) for date in filter["range"]]        
     pipeline = aggPurchases(dates)
     list_purchase = list(purchases.aggregate(pipeline))
     return list_purchase
