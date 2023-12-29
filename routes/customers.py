@@ -116,10 +116,12 @@ def handle_delete_customer():
 @verify_token
 def handle_customer_stats():
     filter = request.json
+    print(filter)
     dates = [dt.now() - timedelta(days=60), dt.now()]
     if len(filter["range"]) > 0:
         #dates = [dt.fromisoformat(date) for date in filter["range"]]
         dates = [dt.strptime(date, "%Y-%m-%dT%H:%M:%S.%fZ") for date in filter["range"]]    
+    print(dates)
     pipeline = aggCustomers(dates)
     list_customer = list(customers.aggregate(pipeline))
     return list_customer
