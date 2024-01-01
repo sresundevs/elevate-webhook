@@ -125,3 +125,24 @@ def handle_customer_stats():
     pipeline = aggCustomers(dates)
     list_customer = list(customers.aggregate(pipeline))
     return list_customer
+
+
+@customer_bp.route("/updateDates", methods=["GET"])
+def handle_update_dates():
+    documents = customers.find({})
+    for document in documents:
+        for key in ['UltimoContacto', 'created_at', 'updated_at']:
+            if key in document and isinstance(document[key], dt):
+                document[key] = document[key].astimezone(pytz.timezone('America/Bogota'))
+        print(document['Telefono'], document['created_at'].strftime("%Y-%m-%dT%H:%M:%S"))
+        print(document['created_at'])
+        # Actualiza el documento en la colección
+        customers.update_one({"_id": document["_id"]}, {"$set": document})
+    return "OK"
+
+@customer_bp.route("/getCustomers", methods=["GET"])
+def handle_get_customers():
+    documents = customers.find({})
+    for document in documents:
+        print(document['created_at'], ' -- ' ,document['created_at'].strftime("%Y-%m-%dT%H:%M:%S"))       
+    return "OK"
