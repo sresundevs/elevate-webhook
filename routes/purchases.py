@@ -1,6 +1,8 @@
 from datetime import datetime as dt, timedelta
+import os
 
 from bson import ObjectId
+from dotenv import dotenv_values
 from flask import Blueprint, request
 from pymongo.errors import DuplicateKeyError
 import pytz
@@ -21,7 +23,13 @@ class PurchaseNotFoundException(Exception):
     "Raised when the purchase not found"
     pass
 
-tz = pytz.timezone('UTC')
+
+config = {
+    **dotenv_values(".env"),  # load development variables
+    **os.environ,  # override loaded values with environment variables
+}
+
+tz = pytz.timezone(config["TIMEZONE"])
 
 customers = connect_db().customers
 purchases = connect_db().purchases
@@ -179,10 +187,17 @@ def handle_upload_purchase():
 @verify_token
 def handle_get_purchasesStats():
     filter = request.json
-    dates = [dt.now() - timedelta(days=60), dt.now()]
+    dates = [
+        dt.utcnow().replace(tzinfo=pytz.utc).astimezone(tz) - timedelta(days=60),
+        dt.utcnow().replace(tzinfo=pytz.utc).astimezone(tz),
+    ]
     if len(filter["range"]) > 0:
-        #dates = [dt.fromisoformat(date) for date in filter["range"]]
-        dates = [dt.strptime(date, "%Y-%m-%dT%H:%M:%S.%fZ").astimezone(tz) for date in filter["range"]]        
+        dates = [
+            dt.strptime(date, "%Y-%m-%dT%H:%M:%S.%fZ")
+            .replace(tzinfo=pytz.utc)
+            .astimezone(tz)
+            for date in filter["range"]
+        ]
     pipeline = aggPurchases(dates)
     list_purchase = list(purchases.aggregate(pipeline))
     return list_purchase

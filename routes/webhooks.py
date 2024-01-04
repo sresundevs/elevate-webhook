@@ -5,6 +5,7 @@ from datetime import datetime as dt
 from dotenv import dotenv_values
 from flask import Blueprint, request
 from lolapy import LolaMessageSender
+import pytz
 import stripe
 
 from db.db import connect_db, timestamps
@@ -15,6 +16,8 @@ config = {
     **dotenv_values(".env"),    # load development variables
     **os.environ,               # override loaded values with environment variables
 }
+
+tz = pytz.timezone(config['TIMEZONE'])
 
 db = connect_db()
 leads = db[config['DB_COLLECTION_L']]
@@ -52,7 +55,7 @@ def handle_event_hotmart():
         data = {
             "Telefono": customer["Telefono"],
             "IdCompra": purchaseData["data"]["purchase"]["transaction"],
-            "FechaCompra": dt.utcfromtimestamp(int(purchaseData["data"]["purchase"]["order_date"])/1000),
+            "FechaCompra": dt.utcfromtimestamp(int(purchaseData["data"]["purchase"]["order_date"])/1000).replace(tzinfo=pytz.utc).astimezone(tz),
             "CompraVerificable": "Yes",
             "MetodoPago": f'Hotmart - {purchaseData["data"]["purchase"]["payment"]["type"]}',
             "PagoAprobado": "Yes" if purchaseData["data"]["purchase"]["status"] == "APPROVED" else "Not"

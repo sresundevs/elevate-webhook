@@ -1,5 +1,17 @@
 def aggPurchases(range):
     return [
+        {
+            "$addFields": {
+                "FechaCompra": {
+                    "$toDate": {
+                        "$dateToString": {
+                            "date": "$FechaCompra",
+                            "timezone": "America/Bogota",
+                        }
+                    }
+                }
+            }
+        },
         {"$match": {"FechaCompra": {"$gte": range[0], "$lte": range[1]}}},
         {
             "$group": {
@@ -9,6 +21,7 @@ def aggPurchases(range):
                             "year": {"$year": "$FechaCompra"},
                             "month": {"$month": "$FechaCompra"},
                             "day": {"$dayOfMonth": "$FechaCompra"},
+                            "timezone": "America/Bogota",
                         }
                     },
                     "CompraVerificable": "$CompraVerificable",
@@ -34,6 +47,18 @@ def aggPurchases(range):
 
 def aggCustomers(range):
     return [
+        {
+            "$addFields": {
+                "created_at": {
+                    "$toDate": {
+                        "$dateToString": {
+                            "date": "$created_at",
+                            "timezone": "America/Bogota",
+                        }
+                    }
+                }
+            }
+        },
         {"$match": {"created_at": {"$gte": range[0], "$lte": range[1]}}},
         {
             "$lookup": {
@@ -51,6 +76,7 @@ def aggCustomers(range):
                         "year": {"$year": "$created_at"},
                         "month": {"$month": "$created_at"},
                         "day": {"$dayOfMonth": "$created_at"},
+                        "timezone": "America/Bogota",
                     }
                 },
                 "Compras": {

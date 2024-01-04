@@ -1,4 +1,6 @@
 from datetime import datetime as dt, timedelta
+import os
+from dotenv import dotenv_values
 
 from flask import Blueprint, request
 from pymongo.errors import DuplicateKeyError
@@ -18,7 +20,13 @@ class CustomerNotFoundException(Exception):
     "Raised when the customer not found"
     pass
 
-tz = pytz.timezone('UTC')
+
+config = {
+    **dotenv_values(".env"),  # load development variables
+    **os.environ,  # override loaded values with environment variables
+}
+
+tz = pytz.timezone(config["TIMEZONE"])
 
 customers = connect_db().customers
 
@@ -116,33 +124,18 @@ def handle_delete_customer():
 @verify_token
 def handle_customer_stats():
     filter = request.json
-    print(filter)
-    dates = [dt.now() - timedelta(days=60), dt.now()]
+    dates = [
+        dt.utcnow().replace(tzinfo=pytz.utc).astimezone(tz) - timedelta(days=60),
+        dt.utcnow().replace(tzinfo=pytz.utc).astimezone(tz),
+    ]
     if len(filter["range"]) > 0:
-        #dates = [dt.fromisoformat(date) for date in filter["range"]]
-        dates = [dt.strptime(date, "%Y-%m-%dT%H:%M:%S.%fZ") for date in filter["range"]]    
-    print(dates)
+        dates = [
+            dt.strptime(date, "%Y-%m-%dT%H:%M:%S.%fZ")
+            .replace(tzinfo=pytz.utc)
+            .astimezone(tz)
+            for date in filter["range"]
+        ]
     pipeline = aggCustomers(dates)
+
     list_customer = list(customers.aggregate(pipeline))
     return list_customer
-
-
-@customer_bp.route("/updateDates", methods=["GET"])
-def handle_update_dates():
-    documents = customers.find({})
-    for document in documents:
-        for key in ['UltimoContacto', 'created_at', 'updated_at']:
-            if key in document and isinstance(document[key], dt):
-                document[key] = document[key].astimezone(pytz.timezone('America/Bogota'))
-        print(document['Telefono'], document['created_at'].strftime("%Y-%m-%dT%H:%M:%S"))
-        print(document['created_at'])
-        # Actualiza el documento en la colección
-        customers.update_one({"_id": document["_id"]}, {"$set": document})
-    return "OK"
-
-@customer_bp.route("/getCustomers", methods=["GET"])
-def handle_get_customers():
-    documents = customers.find({})
-    for document in documents:
-        print(document['created_at'], ' -- ' ,document['created_at'].strftime("%Y-%m-%dT%H:%M:%S"))       
-    return "OK"
