@@ -58,7 +58,8 @@ def handle_event_hotmart():
             "FechaCompra": dt.utcfromtimestamp(int(purchaseData["data"]["purchase"]["order_date"])/1000).replace(tzinfo=pytz.utc).astimezone(tz),
             "CompraVerificable": "Yes",
             "MetodoPago": f'Hotmart - {purchaseData["data"]["purchase"]["payment"]["type"]}',
-            "PagoAprobado": "Yes" if purchaseData["data"]["purchase"]["status"] == "APPROVED" else "Not"
+            "PagoAprobado": "Yes" if purchaseData["data"]["purchase"]["status"] == "APPROVED" else "Not",
+            "Status": purchaseData["data"]["purchase"]["status"],
             }
         
         purchase = purchases.find_one({"IdCompra":data["IdCompra"]})
