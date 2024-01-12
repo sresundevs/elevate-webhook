@@ -83,7 +83,8 @@ def handle_event_hotmart():
         if message and sendMessage:
             lead = leadData["lead"]
             print(">>> LEAD", lead)
-            print(">>> CONFIG", config["ASSISTANT_TOKEN"], config['PROMPTER_URL'])
+            print(">>> ASSISTANT_TOKEN", config["ASSISTANT_TOKEN"])
+            print(">>> PROMPTER_URL", config['PROMPTER_URL'])
             lola = LolaMessageSender(lead, config["ASSISTANT_TOKEN"], config['PROMPTER_URL'])    
             lola.send_text_message(message)
             print("Mensaje enviado")
