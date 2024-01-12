@@ -68,7 +68,7 @@ def handle_event_hotmart():
         
         purchase = purchases.find_one({"IdCompra":data["IdCompra"]})
 
-        print(">>> PURCHASE", purchase)
+        # print(">>> PURCHASE", purchase)
 
         sendMessage = False
         if purchase:
@@ -79,7 +79,7 @@ def handle_event_hotmart():
             purchases.insert_one(timestamps(data))
             sendMessage = True
 
-        print(">>> SEND MESSAGE", sendMessage)
+        # print(">>> SEND MESSAGE", sendMessage)
 
         if message and sendMessage:
             lead = leadData["lead"]
@@ -102,10 +102,10 @@ def handle_event_hotmart():
             }
 
             # Print curl of this request
-            print(">>> CURL", f"curl -X POST '{config['PROMPTER_URL']}/api/notification/push' -H 'x-lola-auth: {config['ASSISTANT_TOKEN']}' -H 'Content-Type: application/json' -d '{json.dumps(body)}'")
+            # print(">>> CURL", f"curl -X POST '{config['PROMPTER_URL']}/api/notification/push' -H 'x-lola-auth: {config['ASSISTANT_TOKEN']}' -H 'Content-Type: application/json' -d '{json.dumps(body)}'")
 
             response = requests.post(config['PROMPTER_URL']+"/api/notification/push", headers=headers, json=body)
-            print(">>> RESPONSE", response)
+            # print(">>> RESPONSE", response)
             print("Mensaje enviado")
         else:
             print('Mensaje no enviado')
