@@ -51,6 +51,8 @@ def handle_event_hotmart():
         leadData = leads.find_one({'Telefono':customer["Telefono"]})
         
         message = messageToSend(customer, purchaseData)
+
+        print(">>> MESSAGE", message)
         
         data = {
             "Telefono": customer["Telefono"],
@@ -63,6 +65,9 @@ def handle_event_hotmart():
             }
         
         purchase = purchases.find_one({"IdCompra":data["IdCompra"]})
+
+        print(">>> PURCHASE", purchase)
+
         sendMessage = False
         if purchase:
             purchases.update_one({'IdCompra':data["IdCompra"]},{'$set': timestamps(data,True)})
@@ -71,6 +76,8 @@ def handle_event_hotmart():
         else:
             purchases.insert_one(timestamps(data))
             sendMessage = True
+
+        print(">>> SEND MESSAGE", sendMessage)
 
         if message and sendMessage:
             lead = leadData["lead"]
