@@ -33,7 +33,7 @@ def messageToSend(customer, purchaseData):
         'EXPIRED':'lamentablemente la tarjeta con la que ha intentado realizar el pago esta expirada, por favor intente con otra.',
         'BLOCKED':'lamentablemente la tarjeta con la que ha intentado pagar esta bloqueada, por favor intente con otra.',
         'NO_FUNDS':'lamentablemente la tarjeta con la que ha intentado pagar no tiene fondos suficientes, por favor intente con otra.',
-        'CANCELLED':'lamentablemente el pago fue cancelado debido a un problema del procesador de pagos, por favor intente con otra tarjeta. En caso de querer saber más sobre pagos cancelados acceda a: https://help.hotmart.com/pt-BR/article/Como-funciona-o-processo-de-compra-na-Hotmart-Por-que-minha-compra-foi-cancelada-/203456160'
+        'CANCELED':'lamentablemente el pago fue cancelado debido a un problema del procesador de pagos, por favor intente con otra tarjeta. En caso de querer saber más sobre pagos cancelados acceda a: https://help.hotmart.com/pt-BR/article/Como-funciona-o-processo-de-compra-na-Hotmart-Por-que-minha-compra-foi-cancelada-/203456160'
     }
     try:
         return f'Estimado {customer["Nombre"]}, {messages[purchaseData["data"]["purchase"]["status"]]}'
