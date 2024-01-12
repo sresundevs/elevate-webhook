@@ -101,6 +101,9 @@ def handle_event_hotmart():
                 "Content-Type": "application/json"
             }
 
+            # Print curl of this request
+            print(">>> CURL", f"curl -X POST '{config['PROMPTER_URL']}/api/notification/push' -H 'x-lola-auth: {config['ASSISTANT_TOKEN']}' -H 'Content-Type: application/json' -d '{json.dumps(body)}'")
+
             response = requests.post(config['PROMPTER_URL']+"/api/notification/push", headers=headers, json=body)
             print(">>> RESPONSE", response)
             print("Mensaje enviado")
