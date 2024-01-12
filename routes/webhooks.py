@@ -7,6 +7,7 @@ from flask import Blueprint, request
 from lolapy import LolaMessageSender
 import pytz
 import stripe
+import requests
 
 from db.db import connect_db, timestamps
 
@@ -82,11 +83,26 @@ def handle_event_hotmart():
 
         if message and sendMessage:
             lead = leadData["lead"]
-            print(">>> LEAD", lead)
-            print(">>> ASSISTANT_TOKEN", config["ASSISTANT_TOKEN"])
-            print(">>> PROMPTER_URL", config['PROMPTER_URL'])
-            lola = LolaMessageSender(lead, config["ASSISTANT_TOKEN"], config['PROMPTER_URL'])    
-            lola.send_text_message(message)
+            # print(">>> LEAD", lead)
+            # print(">>> ASSISTANT_TOKEN", config["ASSISTANT_TOKEN"])
+            # print(">>> PROMPTER_URL", config['PROMPTER_URL'])
+            # lola = LolaMessageSender(lead, config["ASSISTANT_TOKEN"], config['PROMPTER_URL'])    
+            # lola.send_text_message(message)
+            body = {
+                "chatLead": lead,
+                "label": "notification",
+                "payload": {
+                    "message": message
+                }
+            }
+
+            headers = {
+                "x-lola-auth": config["ASSISTANT_TOKEN"],
+                "Content-Type": "application/json"
+            }
+
+            response = requests.post(config['PROMPTER_URL']+"/api/notification/push", headers=headers, json=body)
+            print(">>> RESPONSE", response)
             print("Mensaje enviado")
         else:
             print('Mensaje no enviado')
