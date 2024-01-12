@@ -25,6 +25,9 @@ customers = db[config['DB_COLLECTION_C']]
 purchases = db[config['DB_COLLECTION_P']]
 
 def messageToSend(customer, purchaseData):
+    print(">>> MESSAGE_TO_SEND")
+    print(">>> purchaseData", purchaseData)
+
     messages = {
         'APPROVED':f'me complace informarte que tu pago fue aprobado. Por favor verifica tu email {purchaseData["data"]["buyer"]["email"]}, dado que te estaremos enviando un email con la factura y otro con un acceso para que definas la contraseña de tu usuario y puedas acceder al curso. Felicitaciones.',
         'EXPIRED':'lamentablemente la tarjeta con la que ha intentado realizar el pago esta expirada, por favor intente con otra.',
@@ -34,7 +37,8 @@ def messageToSend(customer, purchaseData):
     }
     try:
         return f'Estimado {customer["Nombre"]}, {messages[purchaseData["data"]["purchase"]["status"]]}'
-    except:
+    except Exception as e:
+        print(e)
         return None
 
 #Route to listen event in hotmart
