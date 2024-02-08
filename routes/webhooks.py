@@ -27,7 +27,7 @@ purchases = db[config['DB_COLLECTION_P']]
 
 def messageToSend(customer, purchaseData):
     messages = {
-        'APPROVED':f'me complace informarte que tu pago fue aprobado. Por favor verifica tu email {purchaseData["data"]["buyer"]["email"]}, dado que te estaremos enviando un email con la factura y otro con un acceso para que definas la contraseña de tu usuario y puedas acceder al curso. Adicionalmente aquí tienes el link de soporte https://wa.me/19549328935 para que podamos verificar tu compra, felicitaciones.',
+        'CANCELED':f'me complace informarte que tu pago fue aprobado. Por favor verifica tu email {purchaseData["data"]["buyer"]["email"]}, dado que te estaremos enviando un email con la factura y otro con un acceso para que definas la contraseña de tu usuario y puedas acceder al curso. Adicionalmente aquí tienes el link de soporte https://wa.me/19549328935 para que podamos verificar tu compra, felicitaciones.',
         'EXPIRED':'lamentablemente la tarjeta con la que ha intentado realizar el pago esta expirada, por favor intente con otra.',
         'BLOCKED':'lamentablemente la tarjeta con la que ha intentado pagar esta bloqueada, por favor intente con otra.',
         'NO_FUNDS':'lamentablemente la tarjeta con la que ha intentado pagar no tiene fondos suficientes, por favor intente con otra.',
